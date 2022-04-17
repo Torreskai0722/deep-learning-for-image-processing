@@ -7,8 +7,11 @@ from torch import nn, Tensor
 from torch.nn import functional as F
 from .resnet_backbone import resnet50, resnet101
 from .mobilenet_backbone import mobilenet_v3_large
+import time
 
-
+def time_synchronized():
+    torch.cuda.synchronize() if torch.cuda.is_available() else None
+    return time.time()
 class IntermediateLayerGetter(nn.ModuleDict):
     """
     Module wrapper that returns intermediate layers from a model
@@ -88,14 +91,22 @@ class DeepLabV3(nn.Module):
     def forward(self, x: Tensor) -> Dict[str, Tensor]:
         input_shape = x.shape[-2:]
         # contract: features is a dict of tensors
+        t0 = time_synchronized()
         features = self.backbone(x)
+        t1 = time_synchronized()
 
         result = OrderedDict()
         x = features["out"]
         x = self.classifier(x)
+        t2 = time_synchronized()
+        
         # 使用双线性插值还原回原图尺度
         x = F.interpolate(x, size=input_shape, mode='bilinear', align_corners=False)
         result["out"] = x
+        t3 = time_synchronized()
+        
+        print(t1-t0,t2-t1,t3-t2)
+        t = [t1-t0,t2-t1,t3-t2]
 
         if self.aux_classifier is not None:
             x = features["aux"]
@@ -104,8 +115,7 @@ class DeepLabV3(nn.Module):
             x = F.interpolate(x, size=input_shape, mode='bilinear', align_corners=False)
             result["aux"] = x
 
-        return result
-
+        return result, t
 
 class FCNHead(nn.Sequential):
     def __init__(self, in_channels, channels):
