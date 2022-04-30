@@ -64,34 +64,36 @@ def main():
 
     model.eval()  # 进入验证模式
     with torch.no_grad():
-        # init
-        img_height, img_width = img.shape[-2:]
-        init_img = torch.zeros((1, 3, img_height, img_width), device=device)
-        model(init_img)
+        for i in range(500):
+            
+            # init
+            img_height, img_width = img.shape[-2:]
+            init_img = torch.zeros((1, 3, img_height, img_width), device=device)
+            model(init_img)
 
-        t_start = time_synchronized()
-        predictions = model(img.to(device))[0]
-        t_end = time_synchronized()
-        print("inference+NMS time: {}".format(t_end - t_start))
+            t_start = time_synchronized()
+            predictions = model(img.to(device))[0]
+            t_end = time_synchronized()
+            print("inference+NMS time: {}".format(t_end - t_start))
 
-        predict_boxes = predictions["boxes"].to("cpu").numpy()
-        predict_classes = predictions["labels"].to("cpu").numpy()
-        predict_scores = predictions["scores"].to("cpu").numpy()
+            predict_boxes = predictions["boxes"].to("cpu").numpy()
+            predict_classes = predictions["labels"].to("cpu").numpy()
+            predict_scores = predictions["scores"].to("cpu").numpy()
 
-        if len(predict_boxes) == 0:
-            print("没有检测到任何目标!")
+            # if len(predict_boxes) == 0:
+            #     print("没有检测到任何目标!")
 
-        draw_box(original_img,
-                 predict_boxes,
-                 predict_classes,
-                 predict_scores,
-                 category_index,
-                 thresh=0.4,
-                 line_thickness=3)
-        plt.imshow(original_img)
-        plt.show()
+            draw_box(original_img,
+                    predict_boxes,
+                    predict_classes,
+                    predict_scores,
+                    category_index,
+                    thresh=0.4,
+                    line_thickness=3)
+            # plt.imshow(original_img)
+            # plt.show()
         # 保存预测的图片结果
-        original_img.save("test_result.jpg")
+            # original_img.save("test_result.jpg")
 
 
 if __name__ == '__main__':
